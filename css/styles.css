@@ -1,0 +1,73 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    padding-top: 100px; /* Ajusta este valor según la altura de tu menú */
+
+}
+
+.menu {
+    position: fixed;  /* Cambiado de 'absolute' a 'fixed' */
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 0;
+    background-color: #9c2531;  /* Añade color de fondo para visibilidad */
+    z-index: 999;
+}
+
+.menu-list {
+    list-style: none;
+    margin: 0%;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.menu-item {
+    position: relative;
+}
+
+.menu-item a {
+    text-decoration: none;
+    color: white;
+    padding: 15px 20px;
+    display: block;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.menu-item a:hover {
+    background-color: #333;
+}
+
+/* Submenú */
+.submenu {
+    display: none;
+    position: absolute;
+    background-color: #1a1a1a;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    min-width: 250px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.submenu li a {
+    padding: 12px 20px;
+    color: white;
+    font-size: 14px;
+}
+
+.submenu li a:hover {
+    background-color: #444;
+}
+
+.menu-item:hover .submenu {
+    display: block;
+}
+
+.menu-list li {
+    margin-right: 20px;
+}

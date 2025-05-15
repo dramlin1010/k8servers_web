@@ -1,0 +1,47 @@
+.nav {
+    padding-left: 2px;
+    background-color: rgb(186, 220, 64);
+    margin: 10px auto;
+    width: 85%;
+    height: 50px;
+    top: 0px;
+    text-align: center;
+    color: black;
+    position: sticky;
+    justify-content: center;
+    align-items: center;
+}
+
+.nav ul li{
+    display: inline-block;
+    height: 30px;
+    width: 20%;
+    margin-top: 10px;
+    margin-left: 3px;
+}
+
+ul{
+    list-style-type: none;
+    padding: 5px;
+}
+
+a:link {
+    text-decoration: none;
+}
+
+nav a:hover {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+a {
+    color: #3498db;
+}
+
+a:visited {
+    color: #eb9b1b;
+}
+
+img{
+    text-align: center;
+}

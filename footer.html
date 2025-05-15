@@ -1,0 +1,68 @@
+<head>
+    <style>
+        .footer {
+            background-color: #222;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-section {
+            margin: 10px;
+            max-width: 300px;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #f39c12;
+        }
+
+        .footer-section p,
+        .footer-section a {
+            font-size: 14px;
+            color: #ddd;
+            text-decoration: none;
+        }
+
+        .footer-section a:hover {
+            color: #f39c12;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #555;
+            padding-top: 10px;
+            font-size: 12px;
+        }
+
+    </style>
+</head>
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>Contacto</h3>
+            <p>Email: <a href="mailto:soporte@hosting.com">soporte@hosting.com</a></p>
+            <p>Teléfono: +34 644 74 81 23</p>
+            <p>Dirección: Avenida Larios 18001, Granada, España</p>
+        </div>
+        <div class="footer-section">
+            <h3>Enlaces Rápidos</h3>
+            <ul>
+                <li><a href="index.php">Inicio</a></li>
+                <li><a href="index.php#planes">Planes</a></li>
+                <li><a href="login.php">Iniciar Sesión</a></li>
+                <li><a href="registro.php">Registrar</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; <?php echo date('Y'); ?> Hosting. Todos los derechos reservados.</p>
+    </div>
+</footer>
