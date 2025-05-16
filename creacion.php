@@ -1,8 +1,8 @@
 <?php
-$servidor = "localhost:3311";
-$usuario = "root";
-$password = "";
-$DB = "Hosting";
+$servidor = "localhost";
+$usuario = "daniel";
+$password = "Kt3xa6RqSAgdpskCZyuWfX";
+$DB = "k8servers";
 
 $Nombre = $_POST["Nombre"];
 $Apellidos = $_POST["Apellidos"];

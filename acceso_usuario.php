@@ -1,10 +1,10 @@
 <?php
 session_start();
 
-$servidor = "localhost:3311";
-$usuario = "root";
-$password = "";
-$DB = "Hosting";
+$servidor = "localhost";
+$usuario = "daniel";
+$password = "Kt3xa6RqSAgdpskCZyuWfX";
+$DB = "k8servers";
 $conexion_DB = new mysqli($servidor, $usuario, $password, $DB);
 
 if ($conexion_DB->connect_error) {

@@ -7,10 +7,10 @@ if (!isset($_SESSION['ClienteID'])) {
 
 include("menu_vertical_usuario.html");
 
-$servidor = "localhost:3311";
-$usuario = "root";
-$password = "";
-$DB = "Hosting";
+$servidor = "localhost";
+$usuario = "daniel";
+$password = "Kt3xa6RqSAgdpskCZyuWfX";
+$DB = "k8servers";
 $conn = new mysqli($servidor, $usuario, $password, $DB);
 
 if ($conn->connect_error) {
