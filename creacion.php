@@ -1,5 +1,5 @@
 <?php
-$servidor = "mariadb-host-svc.default.svc.cluster.local";
+$servidor = "mariadb-host-svc";
 $usuario = "daniel";
 $password = "Kt3xa6RqSAgdpskCZyuWfX";
 $DB = "k8servers";
