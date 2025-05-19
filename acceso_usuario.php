@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-$servidor = "localhost";
+$servidor = "mariadb-host-svc.default.svc.cluster.local";
 $usuario = "daniel";
 $password = "Kt3xa6RqSAgdpskCZyuWfX";
 $DB = "k8servers";
