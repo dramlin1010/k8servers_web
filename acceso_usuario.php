@@ -32,7 +32,7 @@ if ($resultado->num_rows > 0) {
         $_SESSION['token'] = $token;
         setcookie("session_token", $token, time() + 3600, "/", "", true, true);
 
-        if ($email === "admin@hosting.com") {
+        if ($email === "admin@k8servers.com") {
             setcookie("admin_session", session_id(), time() + 3600, "/", "", true, true);
             header("Location: admin/panel.php");
         } else {

@@ -85,7 +85,7 @@ if ($conexion -> query($sql) == TRUE) {
 else{
     print("<br>La base de datos ya existe.<br>");
 }
-
+/*
 $sql_tabla = "CREATE TABLE Cliente (
     ClienteID INT AUTO_INCREMENT PRIMARY KEY,
     Nombre VARCHAR(30) NOT NULL,
@@ -179,6 +179,8 @@ if ($conexion_DB -> query($sql_tabla5) == TRUE) {
 }else{
     print("<br> La tabla ya existe.<br>");
 }
+
+*/
 
 if ($respuesta != "-") {
     $insertar_datos = "INSERT INTO Cliente (Nombre, Apellidos, Email, Passwd, Telefono, Pais, Direccion, Imagen) 
