@@ -1,0 +1,1 @@
+[-] Arreglar el que no borra los usuarios con los apellidos con espacio, es decir, no borra los usuarios con dos apellidos.

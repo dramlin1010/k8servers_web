@@ -1,7 +1,9 @@
 <?php
 session_start();
+require 'conexion.php';
 
 if (!isset($_SESSION['ClienteID']) || !isset($_SESSION['token']) || !isset($_COOKIE['session_token'])) {
+    $_SESSION['error_message'] = "Acceso no autorizado. Por favor, inicia sesión.";
     header("Location: login.php");
     exit();
 }
@@ -9,27 +11,33 @@ if (!isset($_SESSION['ClienteID']) || !isset($_SESSION['token']) || !isset($_COO
 if ($_SESSION['token'] !== $_COOKIE['session_token']) {
     session_destroy();
     setcookie("session_token", "", time() - 3600, "/");
+    $_SESSION['error_message'] = "Token de sesión inválido. Por favor, inicia sesión de nuevo.";
     header("Location: login.php");
     exit();
 }
 
-require 'conexion.php';
-
-$ClienteID = $_SESSION['ClienteID'];
-
-$sql = "SELECT FacturaID, Descripcion, Estado, FechaVencimiento FROM Factura WHERE ClienteID = ? ORDER BY FechaVencimiento DESC";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $ClienteID);
-$stmt->execute();
-$result = $stmt->get_result();
+$clienteID = $_SESSION['ClienteID'];
+$highlightFacturaID = isset($_GET['highlight_factura']) ? (int)$_GET['highlight_factura'] : null;
 
 $facturas = [];
-if ($result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $facturas[] = $row;
+$sql = "SELECT FacturaID, Descripcion, Monto, Estado, FechaEmision, FechaVencimiento, SitioID 
+        FROM Factura 
+        WHERE ClienteID = ? 
+        ORDER BY FechaEmision DESC, FacturaID DESC";
+
+$stmt = $conn->prepare($sql);
+if ($stmt) {
+    $stmt->bind_param("i", $clienteID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $facturas[] = $row;
+        }
     }
+    $stmt->close();
+} else {
 }
-$stmt->close();
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -37,7 +45,7 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Panel k8servers</title>
+    <title>Mis Facturas - Panel k8servers</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -47,21 +55,31 @@ $conn->close();
         <main class="panel-main-content animated-section">
             <header class="panel-main-header">
                 <div class="container-fluid">
-                    <h1>Dashboard Principal</h1>
-                    <p>Resumen de tu actividad y facturas recientes.</p>
+                    <h1>Mis Facturas</h1>
+                    <p>Consulta el historial y estado de tus facturas.</p>
                 </div>
             </header>
 
             <div class="panel-content-area">
                 <div class="container-fluid">
+                    <?php
+                    if (isset($_SESSION['success_message'])) {
+                        echo '<div class="alert alert-success">' . htmlspecialchars($_SESSION['success_message']) . '</div>';
+                        unset($_SESSION['success_message']);
+                    }
+                    if (isset($_SESSION['error_message'])) {
+                        echo '<div class="alert alert-danger">' . htmlspecialchars($_SESSION['error_message']) . '</div>';
+                        unset($_SESSION['error_message']);
+                    }
+                    ?>
                     <section class="content-section">
-                        <h2 class="section-subtitle">Mis Facturas Recientes</h2>
+                        <h2 class="section-subtitle">Historial de Facturación</h2>
                         <?php if (empty($facturas)): ?>
                             <div class="empty-state">
                                 <i class="icon-big">&#128179;</i>
-                                <p>No tienes facturas pendientes ni historial de facturas.</p>
-                                <p>Si deseas activar tu servicio de hosting, puedes hacerlo ahora.</p>
-                                <a href="contratar_servicio.php" class="btn btn-primary">Contratar Hosting Ahora</a>
+                                <p>Aún no tienes ninguna factura generada.</p>
+                                <p>Cuando contrates un servicio, tus facturas aparecerán aquí.</p>
+                                <a href="contratar_servicio.php" class="btn btn-primary">Contratar Hosting</a>
                             </div>
                         <?php else: ?>
                             <div class="table-responsive">
@@ -70,21 +88,25 @@ $conn->close();
                                         <tr>
                                             <th>ID Factura</th>
                                             <th>Descripción</th>
+                                            <th>Monto</th>
                                             <th>Estado</th>
-                                            <th>Fecha de Vencimiento</th>
+                                            <th>Fecha Emisión</th>
+                                            <th>Fecha Vencimiento</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach ($facturas as $factura): ?>
-                                            <tr>
+                                            <tr class="<?php echo ($highlightFacturaID === (int)$factura['FacturaID']) ? 'highlight-row' : ''; ?>">
                                                 <td>#<?php echo htmlspecialchars($factura['FacturaID']); ?></td>
                                                 <td><?php echo htmlspecialchars($factura['Descripcion']); ?></td>
+                                                <td><?php echo number_format($factura['Monto'], 2, ',', '.'); ?> €</td>
                                                 <td>
                                                     <span class="status-badge status-<?php echo strtolower(htmlspecialchars($factura['Estado'])); ?>">
                                                         <?php echo ucfirst(htmlspecialchars($factura['Estado'])); ?>
                                                     </span>
                                                 </td>
+                                                <td><?php echo $factura['FechaEmision'] ? date("d/m/Y", strtotime($factura['FechaEmision'])) : 'N/A'; ?></td>
                                                 <td><?php echo $factura['FechaVencimiento'] ? date("d/m/Y", strtotime($factura['FechaVencimiento'])) : 'N/A'; ?></td>
                                                 <td>
                                                     <?php if (strtolower($factura['Estado']) === 'pendiente'): ?>
@@ -94,9 +116,8 @@ $conn->close();
                                                         </form>
                                                     <?php elseif (strtolower($factura['Estado']) === 'pagado'): ?>
                                                         <span class="btn btn-xs btn-success disabled">Pagado</span>
-                                                    <?php else: ?>
-                                                         <a href="ver_factura.php?id=<?php echo $factura['FacturaID']; ?>" class="btn btn-xs btn-outline">Ver</a>
                                                     <?php endif; ?>
+                                                    <a href="ver_factura_detalle.php?id=<?php echo $factura['FacturaID']; ?>" class="btn btn-xs btn-outline" style="margin-left: 5px;">Ver</a>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -105,25 +126,6 @@ $conn->close();
                             </div>
                         <?php endif; ?>
                     </section>
-                    
-                    <section class="content-section">
-                        <h2 class="section-subtitle">Accesos Rápidos</h2>
-                        <div class="quick-actions-grid">
-                            <a href="mis_sitios.php" class="quick-action-item">
-                                <i class="icon-big">&#128187;</i>
-                                <span>Gestionar Mis Sitios</span>
-                            </a>
-                            <a href="support.php" class="quick-action-item">
-                                <i class="icon-big">&#9993;</i>
-                                <span>Abrir Ticket de Soporte</span>
-                            </a>
-                            <a href="perfil.php" class="quick-action-item">
-                                <i class="icon-big">&#128100;</i>
-                                <span>Actualizar Mi Perfil</span>
-                            </a>
-                        </div>
-                    </section>
-
                 </div>
             </div>
         </main>
