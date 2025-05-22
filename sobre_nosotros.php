@@ -88,8 +88,6 @@ $faqs_sobre_nosotros = [
     </style>
 </head>
 <body>
-    <?php?>
-
     <header class="about-hero animated-section">
         <div class="container">
             <h1>Conoce k8servers</h1>
