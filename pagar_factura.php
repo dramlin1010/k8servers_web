@@ -179,7 +179,7 @@ try {
     }
 
 } catch (Exception $e) {
-    if ($conn->inTransaction()) {
+    if (isset($conn) && $conn instanceof mysqli && $conn->ping()) {
         $conn->rollback();
     }
     error_log("PAGAR_FACTURA Exception: FacturaID $facturaID, ClienteID $clienteID_session - " . $e->getMessage());
