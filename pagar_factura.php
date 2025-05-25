@@ -66,7 +66,7 @@ try {
         $nuevo_estado_factura = 'pagado';
         $fecha_pago = date('Y-m-d H:i:s');
 
-        $sql_update_factura = "UPDATE Factura SET Estado = ?, FechaPago = ?, MetodoPago = ?, TransaccionID = ? WHERE FacturaID = ? AND ClienteID = ?";
+        $sql_update_sitio = "UPDATE SitioWeb SET EstadoServicio = ?, EstadoAprovisionamientoK8S = ?, DirectorioEFSRuta = ? WHERE SitioID = ? AND ClienteID = ?";
         $stmt_update_factura = $conn->prepare($sql_update_factura);
         if (!$stmt_update_factura) throw new Exception("Error al preparar actualización de factura: " . $conn->error);
         $stmt_update_factura->bind_param("ssssii", $nuevo_estado_factura, $fecha_pago, $metodo_pago_simulado, $transaccion_id_simulada, $facturaID, $clienteID_session);
