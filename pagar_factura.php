@@ -31,8 +31,10 @@ if ($facturaID === false || $facturaID <= 0) {
 }
 
 $conn->begin_transaction();
+$sql_update_factura = "";
 
 try {
+    $sql_update_factura = "UPDATE Factura SET ...";
     $sql_info_factura = "SELECT Estado, Monto, Descripcion, SitioID FROM Factura WHERE FacturaID = ? AND ClienteID = ?";
     $stmt_info = $conn->prepare($sql_info_factura);
     if (!$stmt_info) throw new Exception("Error al preparar consulta de factura: " . $conn->error);
@@ -41,6 +43,11 @@ try {
     $result_info = $stmt_info->get_result();
     $factura_info = $result_info->fetch_assoc();
     $stmt_info->close();
+
+    if (empty($sql_update_factura)) {
+    throw new Exception("La consulta SQL para actualizar la factura no fue definida.");
+    }
+    $stmt_update_factura = $conn->prepare($sql_update_factura);
 
     if (!$factura_info) {
         throw new Exception("Factura no encontrada o no te pertenece.");
@@ -63,12 +70,14 @@ try {
     $mensaje_adicional_exito = "";
 
     if ($pago_exitoso) {
-        $nuevo_estado_factura = 'pagado';
-        $fecha_pago = date('Y-m-d H:i:s');
+    $nuevo_estado_factura = 'pagado';
+    $fecha_pago = date('Y-m-d H:i:s');
 
-        $sql_update_sitio = "UPDATE SitioWeb SET EstadoServicio = ?, EstadoAprovisionamientoK8S = ?, DirectorioEFSRuta = ? WHERE SitioID = ? AND ClienteID = ?";
-        $stmt_update_factura = $conn->prepare($sql_update_factura);
-        if (!$stmt_update_factura) throw new Exception("Error al preparar actualización de factura: " . $conn->error);
+    $sql_update_factura = "UPDATE Factura SET Estado = ?, FechaPago = ?, MetodoPago = ?, TransaccionID = ? WHERE FacturaID = ? AND ClienteID = ?"; 
+    error_log("PAGAR_FACTURA DEBUG: Antes de prepare. pago_exitoso=" . ($pago_exitoso ? 'true' : 'false') . ". sql_update_factura definida: " . (isset($sql_update_factura) && !empty($sql_update_factura) ? 'Sí' : 'No'));
+
+    $stmt_update_factura = $conn->prepare($sql_update_factura);
+    if (!$stmt_update_factura) throw new Exception("Error al preparar actualización de factura: " . $conn->error);
         $stmt_update_factura->bind_param("ssssii", $nuevo_estado_factura, $fecha_pago, $metodo_pago_simulado, $transaccion_id_simulada, $facturaID, $clienteID_session);
         
         if (!$stmt_update_factura->execute()) {
