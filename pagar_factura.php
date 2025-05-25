@@ -2,6 +2,10 @@
 session_start();
 require 'conexion.php';
 
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 if (!isset($_SESSION['ClienteID']) || !isset($_SESSION['token']) || !isset($_COOKIE['session_token'])) {
     $_SESSION['error_message'] = "Acceso no autorizado. Por favor, inicia sesión.";
     header("Location: login.php");
@@ -73,11 +77,11 @@ try {
     $nuevo_estado_factura = 'pagado';
     $fecha_pago = date('Y-m-d H:i:s');
 
-    $sql_update_factura = "UPDATE Factura SET Estado = ?, FechaPago = ?, MetodoPago = ?, TransaccionID = ? WHERE FacturaID = ? AND ClienteID = ?"; 
-    error_log("PAGAR_FACTURA DEBUG: Antes de prepare. pago_exitoso=" . ($pago_exitoso ? 'true' : 'false') . ". sql_update_factura definida: " . (isset($sql_update_factura) && !empty($sql_update_factura) ? 'Sí' : 'No'));
-
+    $sql_update_factura = "UPDATE Factura SET Estado = ?, FechaPago = ?, MetodoPago = ?, TransaccionID = ? WHERE FacturaID = ? AND ClienteID = ?";
+    error_log("DEBUG SQL (update_factura): " . $sql_update_factura);
     $stmt_update_factura = $conn->prepare($sql_update_factura);
-    if (!$stmt_update_factura) throw new Exception("Error al preparar actualización de factura: " . $conn->error);
+    
+    if (!$stmt_update_factura) throw new Exception("Error al preparar actualización de factura: " . $conn->error . " | SQL: " . $sql_update_factura);
         $stmt_update_factura->bind_param("ssssii", $nuevo_estado_factura, $fecha_pago, $metodo_pago_simulado, $transaccion_id_simulada, $facturaID, $clienteID_session);
         
         if (!$stmt_update_factura->execute()) {
