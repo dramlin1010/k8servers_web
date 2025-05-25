@@ -5,6 +5,7 @@ require 'conexion.php';
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
+error_reporting(E_ALL);
 
 if (!isset($_SESSION['ClienteID']) || !isset($_SESSION['token']) || !isset($_COOKIE['session_token'])) {
     $_SESSION['error_message'] = "Acceso no autorizado. Por favor, inicia sesión.";
@@ -35,23 +36,17 @@ if ($facturaID === false || $facturaID <= 0) {
 }
 
 $conn->begin_transaction();
-$sql_update_factura = "";
 
 try {
-    $sql_update_factura = "UPDATE Factura SET ...";
     $sql_info_factura = "SELECT Estado, Monto, Descripcion, SitioID FROM Factura WHERE FacturaID = ? AND ClienteID = ?";
+    error_log("PAGAR_FACTURA SQL (info_factura): " . $sql_info_factura . " | Params: FacturaID=$facturaID, ClienteID=$clienteID_session");
     $stmt_info = $conn->prepare($sql_info_factura);
-    if (!$stmt_info) throw new Exception("Error al preparar consulta de factura: " . $conn->error);
+    if (!$stmt_info) throw new Exception("Error al preparar consulta de información de factura: " . $conn->error . " | SQL: " . $sql_info_factura);
     $stmt_info->bind_param("ii", $facturaID, $clienteID_session);
     $stmt_info->execute();
     $result_info = $stmt_info->get_result();
     $factura_info = $result_info->fetch_assoc();
     $stmt_info->close();
-
-    if (empty($sql_update_factura)) {
-    throw new Exception("La consulta SQL para actualizar la factura no fue definida.");
-    }
-    $stmt_update_factura = $conn->prepare($sql_update_factura);
 
     if (!$factura_info) {
         throw new Exception("Factura no encontrada o no te pertenece.");
@@ -74,18 +69,17 @@ try {
     $mensaje_adicional_exito = "";
 
     if ($pago_exitoso) {
-    $nuevo_estado_factura = 'pagado';
-    $fecha_pago = date('Y-m-d H:i:s');
+        $nuevo_estado_factura = 'pagado';
+        $fecha_pago = date('Y-m-d H:i:s');
 
-    $sql_update_factura = "UPDATE Factura SET Estado = ?, FechaPago = ?, MetodoPago = ?, TransaccionID = ? WHERE FacturaID = ? AND ClienteID = ?";
-    error_log("DEBUG SQL (update_factura): " . $sql_update_factura);
-    $stmt_update_factura = $conn->prepare($sql_update_factura);
-    
-    if (!$stmt_update_factura) throw new Exception("Error al preparar actualización de factura: " . $conn->error . " | SQL: " . $sql_update_factura);
+        $sql_update_factura = "UPDATE Factura SET Estado = ?, FechaPago = ?, MetodoPago = ?, TransaccionID = ? WHERE FacturaID = ? AND ClienteID = ?";
+        error_log("PAGAR_FACTURA SQL (update_factura): " . $sql_update_factura . " | Params: Estado=$nuevo_estado_factura, FechaPago=$fecha_pago, MetodoPago=$metodo_pago_simulado, TransaccionID=$transaccion_id_simulada, FacturaID=$facturaID, ClienteID=$clienteID_session");
+        $stmt_update_factura = $conn->prepare($sql_update_factura);
+        if (!$stmt_update_factura) throw new Exception("Error al preparar actualización de factura: " . $conn->error . " | SQL: " . $sql_update_factura);
         $stmt_update_factura->bind_param("ssssii", $nuevo_estado_factura, $fecha_pago, $metodo_pago_simulado, $transaccion_id_simulada, $facturaID, $clienteID_session);
         
         if (!$stmt_update_factura->execute()) {
-            throw new Exception("Error al actualizar el estado de la factura: " . $stmt_update_factura->error);
+            throw new Exception("Error al ejecutar actualización de factura: " . $stmt_update_factura->error);
         }
         $stmt_update_factura->close();
         
@@ -93,8 +87,10 @@ try {
         $es_factura_activacion = ($sitioID_asociado !== null && stripos($factura_info['Descripcion'], 'activación') !== false);
 
         if ($es_factura_activacion) {
-            $stmt_sitio = $conn->prepare("SELECT ClienteID, SubdominioElegido, EstadoServicio, EstadoAprovisionamientoK8S, DirectorioEFSRuta FROM SitioWeb WHERE SitioID = ? AND ClienteID = ?");
-            if (!$stmt_sitio) throw new Exception("Error al preparar consulta de sitio: " . $conn->error);
+            $sql_select_sitio = "SELECT ClienteID, SubdominioElegido, EstadoServicio, EstadoAprovisionamientoK8S, DirectorioEFSRuta FROM SitioWeb WHERE SitioID = ? AND ClienteID = ?";
+            error_log("PAGAR_FACTURA SQL (select_sitio): " . $sql_select_sitio . " | Params: SitioID=$sitioID_asociado, ClienteID=$clienteID_session");
+            $stmt_sitio = $conn->prepare($sql_select_sitio);
+            if (!$stmt_sitio) throw new Exception("Error al preparar consulta de sitio: " . $conn->error . " | SQL: " . $sql_select_sitio);
             $stmt_sitio->bind_param("ii", $sitioID_asociado, $clienteID_session);
             $stmt_sitio->execute();
             $result_sitio = $stmt_sitio->get_result();
@@ -140,11 +136,12 @@ try {
 
                 $nuevo_estado_sitio = 'activo';
                 $sql_update_sitio = "UPDATE SitioWeb SET EstadoServicio = ?, EstadoAprovisionamientoK8S = ?, DirectorioEFSRuta = ? WHERE SitioID = ? AND ClienteID = ?";
+                error_log("PAGAR_FACTURA SQL (update_sitio): " . $sql_update_sitio . " | Params: EstadoServicio=$nuevo_estado_sitio, EstadoAprovisionamientoK8S=$estadoAprovisionamientoActualSitio, DirectorioEFSRuta=$directorioEFSRutaParaGuardar, SitioID=$sitioID_asociado, ClienteID=$clienteID_session");
                 $stmt_update_sitio = $conn->prepare($sql_update_sitio);
-                if (!$stmt_update_sitio) throw new Exception("Error al preparar actualización de sitio: " . $conn->error);
+                if (!$stmt_update_sitio) throw new Exception("Error al preparar actualización de sitio: " . $conn->error . " | SQL: " . $sql_update_sitio);
                 $stmt_update_sitio->bind_param("sssii", $nuevo_estado_sitio, $estadoAprovisionamientoActualSitio, $directorioEFSRutaParaGuardar, $sitioID_asociado, $clienteID_session);
                 if (!$stmt_update_sitio->execute()) {
-                    throw new Exception("Error al actualizar el estado del sitio web: " . $stmt_update_sitio->error);
+                    throw new Exception("Error al ejecutar actualización de sitio web: " . $stmt_update_sitio->error);
                 }
                 $stmt_update_sitio->close();
 
@@ -162,11 +159,12 @@ try {
                                             UltimoError = IF(EstadoTarea LIKE 'error_usuario_sftp' OR EstadoTarea LIKE 'error_directorio', NULL, UltimoError), 
                                             FechaActualizacion = NOW(),
                                             TipoTarea = VALUES(TipoTarea)";
+                    error_log("PAGAR_FACTURA SQL (insert_tarea): " . $sql_insert_tarea . " | Params: SitioID=$sitioID_asociado");
                     $stmt_tarea = $conn->prepare($sql_insert_tarea);
-                    if (!$stmt_tarea) throw new Exception("Error al preparar tarea de aprovisionamiento: " . $conn->error);
+                    if (!$stmt_tarea) throw new Exception("Error al preparar tarea de aprovisionamiento: " . $conn->error . " | SQL: " . $sql_insert_tarea);
                     $stmt_tarea->bind_param("i", $sitioID_asociado);
                     if (!$stmt_tarea->execute()) {
-                        error_log("PAGAR_FACTURA: Error al crear/actualizar tarea K8S para SitioID $sitioID_asociado: " . $stmt_tarea->error);
+                        error_log("PAGAR_FACTURA: Error al ejecutar creación/actualización de tarea K8S para SitioID $sitioID_asociado: " . $stmt_tarea->error);
                         if (!isset($_SESSION['warning_message'])) $_SESSION['warning_message'] = "";
                          $_SESSION['warning_message'] .= " Hubo un problema al registrar la tarea de aprovisionamiento automático (Ref: K8STASK_$sitioID_asociado).";
                     } else {
