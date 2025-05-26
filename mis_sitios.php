@@ -121,7 +121,7 @@ $conn->close();
                                                 <td>
                                                     <?php if (strtolower($sitio['EstadoServicio']) === 'activo'): ?>
                                                         <a href="gestionar_sitio_detalle.php?id=<?php echo $sitio['SitioID']; ?>" class="btn btn-xs btn-outline">Gestionar</a>
-                                                        <a href="gestionar_archivos.php?id=<?php echo $sitio['SitioID']; ?>" class="btn btn-xs btn-outline">FTP</a>
+                                                        <a href="gestor_archivos.php?id=<?php echo $sitio['SitioID']; ?>" class="btn btn-xs btn-outline">FTP</a>
                                                     <?php elseif (strtolower($sitio['EstadoServicio']) === 'pendiente_pago'): ?>
                                                         <a href="facturas.php" class="btn btn-xs btn-warning">Pagar Factura</a>
                                                     <?php else: ?>
