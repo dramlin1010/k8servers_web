@@ -19,7 +19,6 @@ if ($_SESSION['token'] !== $_COOKIE['session_token']) {
     exit();
 }
 $clienteID_session = $_SESSION['ClienteID'];
-$efs_base_path_clientes = "/mnt/efs-clientes";
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST" || !isset($_POST['factura_id'])) {
     $_SESSION['error_message'] = "Solicitud no válida.";
@@ -87,93 +86,52 @@ try {
         $es_factura_activacion = ($sitioID_asociado !== null && stripos($factura_info['Descripcion'], 'activación') !== false);
 
         if ($es_factura_activacion) {
-            $sql_select_sitio = "SELECT ClienteID, SubdominioElegido, EstadoServicio, EstadoAprovisionamientoK8S, DirectorioEFSRuta FROM SitioWeb WHERE SitioID = ? AND ClienteID = ?";
-            error_log("PAGAR_FACTURA SQL (select_sitio): " . $sql_select_sitio . " | Params: SitioID=$sitioID_asociado, ClienteID=$clienteID_session");
-            $stmt_sitio = $conn->prepare($sql_select_sitio);
-            if (!$stmt_sitio) throw new Exception("Error al preparar consulta de sitio: " . $conn->error . " | SQL: " . $sql_select_sitio);
-            $stmt_sitio->bind_param("ii", $sitioID_asociado, $clienteID_session);
-            $stmt_sitio->execute();
-            $result_sitio = $stmt_sitio->get_result();
-            $sitio = $result_sitio->fetch_assoc();
-            $stmt_sitio->close();
+            $sql_select_sitio = "SELECT EstadoServicio, EstadoAprovisionamientoK8S FROM SitioWeb WHERE SitioID = ? AND ClienteID = ?";
+            error_log("PAGAR_FACTURA SQL (select_sitio_for_activation): " . $sql_select_sitio . " | Params: SitioID=$sitioID_asociado, ClienteID=$clienteID_session");
+            $stmt_sitio_check = $conn->prepare($sql_select_sitio);
+            if (!$stmt_sitio_check) throw new Exception("Error al preparar consulta de verificación de sitio: " . $conn->error . " | SQL: " . $sql_select_sitio);
+            $stmt_sitio_check->bind_param("ii", $sitioID_asociado, $clienteID_session);
+            $stmt_sitio_check->execute();
+            $result_sitio_check = $stmt_sitio_check->get_result();
+            $sitio_check_data = $result_sitio_check->fetch_assoc();
+            $stmt_sitio_check->close();
 
-            if ($sitio && $sitio['EstadoServicio'] === 'pendiente_pago') {
-                $subdominioCliente = $sitio['SubdominioElegido'];
-                $directorioClienteRelativo = preg_replace('/[^a-z0-9\-]/', '', strtolower($subdominioCliente));
-                if (empty($directorioClienteRelativo)) $directorioClienteRelativo = "sitio-" . $sitioID_asociado;
+            if ($sitio_check_data && $sitio_check_data['EstadoServicio'] === 'pendiente_pago') {
+                $nuevo_estado_sitio_servicio = 'activo';
+                $nuevo_estado_aprovisionamiento_k8s = 'creacion_directorio_pendiente';
 
-                $directorioClienteAbsoluto = rtrim($efs_base_path_clientes, '/') . '/' . $directorioClienteRelativo;
-                $directorioWwwAbsoluto = $directorioClienteAbsoluto . '/www';
-
-                $estadoAprovisionamientoActualSitio = $sitio['EstadoAprovisionamientoK8S'];
-                $directorioEFSRutaParaGuardar = $directorioClienteAbsoluto;
-                $directorioCreadoExitosamente = false;
-
-                if ($estadoAprovisionamientoActualSitio === 'no_iniciado' || $estadoAprovisionamientoActualSitio === 'error_directorio') {
-                    if (!is_dir($directorioWwwAbsoluto)) {
-                        if (@mkdir($directorioWwwAbsoluto, 0775, true)) {
-                            @chgrp($directorioClienteAbsoluto, 101); 
-                            @chgrp($directorioWwwAbsoluto, 101);
-                            @chmod($directorioClienteAbsoluto, 0775);
-                            @chmod($directorioWwwAbsoluto, 0775);
-                            $directorioCreadoExitosamente = true;
-                            $estadoAprovisionamientoActualSitio = 'directorio_creado';
-                            $mensaje_adicional_exito .= " Directorio del servicio preparado.";
-                        } else {
-                            $estadoAprovisionamientoActualSitio = 'error_directorio';
-                            $php_errormsg = error_get_last()['message'] ?? 'Error desconocido al crear directorio';
-                            error_log("PAGAR_FACTURA: Error al crear directorio EFS para SitioID $sitioID_asociado: $directorioWwwAbsoluto. PHP Error: $php_errormsg.");
-                            $_SESSION['warning_message'] = "Factura pagada, pero hubo un problema al crear el directorio del servicio. Contacta a soporte (Ref: EFSDIR_$sitioID_asociado).";
-                        }
-                    } else {
-                        $directorioCreadoExitosamente = true;
-                        $estadoAprovisionamientoActualSitio = 'directorio_creado';
-                        $mensaje_adicional_exito .= " Directorio del servicio ya existente y verificado.";
-                    }
-                } elseif ($estadoAprovisionamientoActualSitio === 'directorio_creado' || $estadoAprovisionamientoActualSitio === 'k8s_manifiesto_pendiente' || $estadoAprovisionamientoActualSitio === 'k8s_aprovisionado') {
-                    $directorioCreadoExitosamente = true;
-                }
-
-                $nuevo_estado_sitio = 'activo';
-                $sql_update_sitio = "UPDATE SitioWeb SET EstadoServicio = ?, EstadoAprovisionamientoK8S = ?, DirectorioEFSRuta = ? WHERE SitioID = ? AND ClienteID = ?";
-                error_log("PAGAR_FACTURA SQL (update_sitio): " . $sql_update_sitio . " | Params: EstadoServicio=$nuevo_estado_sitio, EstadoAprovisionamientoK8S=$estadoAprovisionamientoActualSitio, DirectorioEFSRuta=$directorioEFSRutaParaGuardar, SitioID=$sitioID_asociado, ClienteID=$clienteID_session");
+                $sql_update_sitio = "UPDATE SitioWeb SET EstadoServicio = ?, EstadoAprovisionamientoK8S = ? WHERE SitioID = ? AND ClienteID = ?";
+                error_log("PAGAR_FACTURA SQL (update_sitio_for_activation): " . $sql_update_sitio . " | Params: EstadoServicio=$nuevo_estado_sitio_servicio, EstadoAprovisionamientoK8S=$nuevo_estado_aprovisionamiento_k8s, SitioID=$sitioID_asociado, ClienteID=$clienteID_session");
                 $stmt_update_sitio = $conn->prepare($sql_update_sitio);
-                if (!$stmt_update_sitio) throw new Exception("Error al preparar actualización de sitio: " . $conn->error . " | SQL: " . $sql_update_sitio);
-                $stmt_update_sitio->bind_param("sssii", $nuevo_estado_sitio, $estadoAprovisionamientoActualSitio, $directorioEFSRutaParaGuardar, $sitioID_asociado, $clienteID_session);
+                if (!$stmt_update_sitio) throw new Exception("Error al preparar actualización de sitio para activación: " . $conn->error . " | SQL: " . $sql_update_sitio);
+                $stmt_update_sitio->bind_param("ssii", $nuevo_estado_sitio_servicio, $nuevo_estado_aprovisionamiento_k8s, $sitioID_asociado, $clienteID_session);
                 if (!$stmt_update_sitio->execute()) {
-                    throw new Exception("Error al ejecutar actualización de sitio web: " . $stmt_update_sitio->error);
+                    throw new Exception("Error al ejecutar actualización de sitio para activación: " . $stmt_update_sitio->error);
                 }
                 $stmt_update_sitio->close();
+                $mensaje_adicional_exito .= " Servicio marcado para activación y preparación de directorio.";
 
-                if ($directorioCreadoExitosamente && 
-                    $estadoAprovisionamientoActualSitio !== 'k8s_aprovisionado' && 
-                    $estadoAprovisionamientoActualSitio !== 'error_k8s' &&
-                    $estadoAprovisionamientoActualSitio !== 'procesando_k8s' &&
-                    $estadoAprovisionamientoActualSitio !== 'k8s_manifiesto_pendiente'
-                    ) {
-                    
-                    $sql_insert_tarea = "INSERT INTO Tareas_Aprovisionamiento_K8S (SitioID, TipoTarea, EstadoTarea) VALUES (?, 'aprovisionar_pod', 'pendiente')
-                                         ON DUPLICATE KEY UPDATE 
-                                            EstadoTarea = IF(EstadoTarea LIKE 'error_usuario_sftp' OR EstadoTarea LIKE 'error_directorio', VALUES(EstadoTarea), EstadoTarea), 
-                                            Intentos = IF(EstadoTarea LIKE 'error_usuario_sftp' OR EstadoTarea LIKE 'error_directorio', 0, Intentos + 1), 
-                                            UltimoError = IF(EstadoTarea LIKE 'error_usuario_sftp' OR EstadoTarea LIKE 'error_directorio', NULL, UltimoError), 
-                                            FechaActualizacion = NOW(),
-                                            TipoTarea = VALUES(TipoTarea)";
-                    error_log("PAGAR_FACTURA SQL (insert_tarea): " . $sql_insert_tarea . " | Params: SitioID=$sitioID_asociado");
-                    $stmt_tarea = $conn->prepare($sql_insert_tarea);
-                    if (!$stmt_tarea) throw new Exception("Error al preparar tarea de aprovisionamiento: " . $conn->error . " | SQL: " . $sql_insert_tarea);
-                    $stmt_tarea->bind_param("i", $sitioID_asociado);
-                    if (!$stmt_tarea->execute()) {
-                        error_log("PAGAR_FACTURA: Error al ejecutar creación/actualización de tarea K8S para SitioID $sitioID_asociado: " . $stmt_tarea->error);
-                        if (!isset($_SESSION['warning_message'])) $_SESSION['warning_message'] = "";
-                         $_SESSION['warning_message'] .= " Hubo un problema al registrar la tarea de aprovisionamiento automático (Ref: K8STASK_$sitioID_asociado).";
-                    } else {
-                        $mensaje_adicional_exito .= " Tarea de aprovisionamiento automático registrada/actualizada.";
-                    }
-                    $stmt_tarea->close();
+                $sql_insert_tarea = "INSERT INTO Tareas_Aprovisionamiento_K8S (SitioID, TipoTarea, EstadoTarea) VALUES (?, 'aprovisionar_directorio_y_pod', 'pendiente')
+                                     ON DUPLICATE KEY UPDATE 
+                                        EstadoTarea = VALUES(EstadoTarea), 
+                                        Intentos = 0, 
+                                        UltimoError = NULL, 
+                                        FechaActualizacion = NOW(),
+                                        TipoTarea = VALUES(TipoTarea)";
+                error_log("PAGAR_FACTURA SQL (insert_tarea_activation): " . $sql_insert_tarea . " | Params: SitioID=$sitioID_asociado");
+                $stmt_tarea = $conn->prepare($sql_insert_tarea);
+                if (!$stmt_tarea) throw new Exception("Error al preparar tarea de aprovisionamiento para activación: " . $conn->error . " | SQL: " . $sql_insert_tarea);
+                $stmt_tarea->bind_param("i", $sitioID_asociado);
+                if (!$stmt_tarea->execute()) {
+                    error_log("PAGAR_FACTURA: Error al ejecutar creación/actualización de tarea K8S para activación, SitioID $sitioID_asociado: " . $stmt_tarea->error);
+                    if (!isset($_SESSION['warning_message'])) $_SESSION['warning_message'] = "";
+                    $_SESSION['warning_message'] .= " Hubo un problema al registrar la tarea de aprovisionamiento automático (Ref: K8SACTTASK_$sitioID_asociado).";
+                } else {
+                    $mensaje_adicional_exito .= " Tarea de aprovisionamiento completo registrada.";
                 }
-            } elseif ($sitio && $sitio['EstadoServicio'] !== 'pendiente_pago') {
-                $mensaje_adicional_exito .= " Pago de factura recurrente procesado.";
+                $stmt_tarea->close();
+            } elseif ($sitio_check_data && $sitio_check_data['EstadoServicio'] !== 'pendiente_pago') {
+                $mensaje_adicional_exito .= " Pago de factura recurrente procesado (servicio ya activo).";
             }
         }
 
