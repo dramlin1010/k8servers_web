@@ -3,19 +3,32 @@ session_start();
 
 header('Content-Type: application/json');
 
-$mongo_uri = "mongodb://localhost:27017";
+$mongo_uri = "mongodb://mongodb-host-svc:27017";
 $mongo_db_name = "k8servers_nosql";
 $mongo_collection_name = "consentimientos_cookies";
 
 $response = ['status' => 'error', 'message' => 'Acción no reconocida.'];
 
 try {
-    $mongo_client = new MongoDB\Client($mongo_uri);
+    $mongo_client = new MongoDB\Client($mongo_uri, [], ['serverSelectionTimeoutMS' => 5000]);
     $db = $mongo_client->$mongo_db_name;
     $collection = $db->$mongo_collection_name;
+
+    $db->command(['ping' => 1]);
+
+} catch (MongoDB\Driver\Exception\ConnectionTimeoutException $e) {
+    error_log("MongoDB Connection Timeout: " . $e->getMessage() . " | URI: " . $mongo_uri);
+    $response['message'] = "No se pudo conectar al servicio de base de datos de consentimientos (timeout).";
+    echo json_encode($response);
+    exit();
+} catch (MongoDB\Driver\Exception\Exception $e) {
+    error_log("Error de conexión/operación con MongoDB: " . $e->getMessage() . " | URI: " . $mongo_uri);
+    $response['message'] = "Error interno del servidor al interactuar con la base de datos de consentimientos.";
+    echo json_encode($response);
+    exit();
 } catch (Exception $e) {
-    error_log("Error de conexión a MongoDB: " . $e->getMessage());
-    $response['message'] = "Error interno del servidor al conectar con la base de datos de consentimientos.";
+    error_log("Error general: " . $e->getMessage() . " | URI: " . $mongo_uri);
+    $response['message'] = "Error interno del servidor.";
     echo json_encode($response);
     exit();
 }
