@@ -45,9 +45,33 @@ if (empty($email) || empty($passwd)) {
                     setcookie("admin_session", session_id(), time() + 3600, "/", "", true, true);
                     header("Location: admin/panel.php");
                 } else {
+                    $log_file = __DIR__ . '/login_activity.json';
+                    $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+                    $timestamp = gmdate('Y-m-d H:i:s\Z');
+                    $log_entry = [
+                        'clienteId' => $usuario_data['ClienteID'],
+                        'email' => $usuario_data['Email'],
+                        'ip' => $ip_address,
+                        'timestamp' => $timestamp,
+                        'type' => 'login'
+                    ];
+
+                    $logs = [];
+                    if (file_exists($log_file)) {
+                        $json_data = file_get_contents($log_file);
+                        if ($json_data !== false) {
+                            $decoded_data = json_decode($json_data, true);
+                            if (is_array($decoded_data)) {
+                                $logs = $decoded_data;
+                            }
+                        }
+                    }
+                    $logs[] = $log_entry;
+                    file_put_contents($log_file, json_encode($logs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
+                    
                     header("Location: panel_usuario.php");
                 }
-                $stmt->close();
+                if($stmt) $stmt->close();
                 $conexion_DB->close();
                 exit();
             } else {
@@ -61,7 +85,7 @@ if (empty($email) || empty($passwd)) {
         $error_message = "Error al preparar la consulta. Inténtalo más tarde.";
     }
 }
-$conexion_DB->close();
+if($conexion_DB) $conexion_DB->close();
 
 if (!empty($error_message)) {
     echo '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Error de Acceso</title><link rel="stylesheet" href="css/styles.css"></head><body style="display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100vh; margin:0; background-color: #0f172a; color: #e2e8f0; font-family: Poppins, sans-serif;">';

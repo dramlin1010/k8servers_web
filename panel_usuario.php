@@ -17,19 +17,42 @@ require 'conexion.php';
 
 $ClienteID = $_SESSION['ClienteID'];
 
-$sql = "SELECT FacturaID, Descripcion, Estado, FechaVencimiento FROM Factura WHERE ClienteID = ? ORDER BY FechaVencimiento DESC";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $ClienteID);
-$stmt->execute();
-$result = $stmt->get_result();
+$sql_facturas = "SELECT FacturaID, Descripcion, Estado, FechaVencimiento FROM Factura WHERE ClienteID = ? ORDER BY FechaVencimiento DESC";
+$stmt_facturas = $conn->prepare($sql_facturas);
+$stmt_facturas->bind_param("i", $ClienteID);
+$stmt_facturas->execute();
+$result_facturas = $stmt_facturas->get_result();
 
 $facturas = [];
-if ($result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
+if ($result_facturas->num_rows > 0) {
+    while ($row = $result_facturas->fetch_assoc()) {
         $facturas[] = $row;
     }
 }
-$stmt->close();
+$stmt_facturas->close();
+
+$ultimos_accesos = [];
+$log_file_path = __DIR__ . '/login_activity.json';
+$max_logins_to_show = 5;
+
+if (file_exists($log_file_path)) {
+    $json_data = file_get_contents($log_file_path);
+    if ($json_data !== false) {
+        $all_logs = json_decode($json_data, true);
+        if (is_array($all_logs)) {
+            $user_logs = array_filter($all_logs, function ($log) use ($ClienteID) {
+                return isset($log['clienteId']) && $log['clienteId'] == $ClienteID;
+            });
+
+            usort($user_logs, function ($a, $b) {
+                return strtotime($b['timestamp']) - strtotime($a['timestamp']);
+            });
+
+            $ultimos_accesos = array_slice($user_logs, 0, $max_logins_to_show);
+        }
+    }
+}
+
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -39,6 +62,43 @@ $conn->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Panel k8servers</title>
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .log-access-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .log-access-list li {
+            background-color: var(--card-bg-secondary, #1e293b);
+            border: 1px solid var(--border-color, #334155);
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: var(--border-radius-sm, 6px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #34d399;
+        }
+        .log-access-list .log-time {
+            font-weight: 500;
+            color: var(--text-color, #e2e8f0);
+        }
+        .log-access-list .log-ip {
+            font-size: 0.9em;
+            color: var(--text-color-muted, #94a3b8);
+        }
+        .empty-state-logs {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--card-bg-secondary, #1e293b);
+            border-radius: var(--border-radius, 8px);
+            color: var(--text-color-muted, #94a3b8);
+        }
+        .empty-state-logs i {
+            font-size: 2em;
+            display: block;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
     <div class="panel-layout">
@@ -103,6 +163,32 @@ $conn->close();
                                     </tbody>
                                 </table>
                             </div>
+                        <?php endif; ?>
+                    </section>
+
+                    <section class="content-section">
+                        <h2 class="section-subtitle">Historial de Accesos Recientes</h2>
+                        <?php if (empty($ultimos_accesos)): ?>
+                            <div class="empty-state-logs">
+                                <i class="icon-big">&#128270;</i>
+                                <p>No hay registros de acceso recientes para tu cuenta.</p>
+                            </div>
+                        <?php else: ?>
+                            <ul class="log-access-list">
+                                <?php foreach ($ultimos_accesos as $acceso): ?>
+                                    <li>
+                                        <span class="log-time">
+                                            <?php
+                                            $fecha_acceso = new DateTime($acceso['timestamp'], new DateTimeZone('UTC'));
+                                            echo $fecha_acceso->format('d/m/Y H:i:s') . ' (UTC)';
+                                            ?>
+                                        </span>
+                                        <span class="log-ip">
+                                            IP: <?php echo htmlspecialchars($acceso['ip']); ?>
+                                        </span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
                         <?php endif; ?>
                     </section>
                     

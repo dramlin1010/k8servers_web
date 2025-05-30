@@ -11,7 +11,7 @@ $Nombre = $_POST["Nombre"] ?? '';
 $Apellidos = $_POST["Apellidos"] ?? '';
 $Email = $_POST["Email"] ?? '';
 $Passwd = $_POST["Passwd"] ?? '';
-$Telefono = $_POST["Telefono"] ?? '';  
+$Telefono = $_POST["Telefono"] ?? '';
 $Pais = $_POST["Paises"] ?? '';
 $Direccion = $_POST["Direccion"] ?? '';
 
@@ -176,9 +176,44 @@ if ($resultado_check === false) {
                        VALUES ('$nombreEscapado', '$apellidosEscapados', '$emailEscapado', '$PasswdHashed', '$telefonoEscapado', '$paisEscapado', '$direccionEscapada')";
 
     if ($conexion_db_especifica->query($insertar_datos) === TRUE) {
-        $_SESSION['success_message'] = "¡Registro completado exitosamente! Ahora puedes iniciar sesión.";
+        $nuevo_cliente_id = $conexion_db_especifica->insert_id;
+
+        $_SESSION['ClienteID'] = $nuevo_cliente_id;
+        $_SESSION['NombreCliente'] = $Nombre;
+        $_SESSION['EmailCliente'] = $Email;
+        $token = bin2hex(random_bytes(32));
+        $_SESSION['token'] = $token;
+        setcookie("session_token", $token, time() + 3600, "/", "", true, true);
+
+        if ($Email !== "admin@k8servers.es") {
+            $log_file = __DIR__ . '/login_activity.json';
+            $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+            $timestamp = gmdate('Y-m-d H:i:s\Z');
+            $log_entry = [
+                'clienteId' => $nuevo_cliente_id,
+                'email' => $Email,
+                'ip' => $ip_address,
+                'timestamp' => $timestamp,
+                'type' => 'register_login'
+            ];
+
+            $logs = [];
+            if (file_exists($log_file)) {
+                $json_data = file_get_contents($log_file);
+                if ($json_data !== false) {
+                    $decoded_data = json_decode($json_data, true);
+                    if (is_array($decoded_data)) {
+                        $logs = $decoded_data;
+                    }
+                }
+            }
+            $logs[] = $log_entry;
+            file_put_contents($log_file, json_encode($logs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
+        }
+        
         $conexion_db_especifica->close();
-        header("Location: login.php");
+        $_SESSION['success_message'] = "¡Registro completado exitosamente! Bienvenido.";
+        header("Location: panel_usuario.php");
         exit();
     } else {
         $_SESSION['error_message'] = "Error al insertar los datos del cliente: " . $conexion_db_especifica->error;
