@@ -1,4 +1,6 @@
 <?php
+require_once '../config.php';
+
 include("menu_admin.html");
 session_start();
 

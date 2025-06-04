@@ -1,4 +1,5 @@
 <?php
+require_once 'config.php';
 session_start();
 
 if (!isset($_SESSION['ClienteID']) || !isset($_SESSION['token']) || !isset($_COOKIE['session_token'])) {

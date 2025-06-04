@@ -1,4 +1,5 @@
 <?php
+require_once 'config.php';
 $nombreUsuario = $_SESSION['NombreCliente'] ?? 'Usuario';
 ?>
 <aside class="panel-sidebar">

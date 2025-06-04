@@ -1,4 +1,5 @@
 <?php
+require_once 'config.php';
 session_start();
 
 $servidor = "mariadb-host-svc";

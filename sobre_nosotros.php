@@ -1,4 +1,5 @@
 <?php
+require_once 'config.php';
 include 'menu.php';
 
 $faqs_sobre_nosotros = [

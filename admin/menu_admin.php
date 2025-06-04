@@ -1,4 +1,5 @@
 <?php
+require_once '../config.php';
 $nombreAdmin = $_SESSION['NombreAdmin'] ?? 'Administrador';
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
