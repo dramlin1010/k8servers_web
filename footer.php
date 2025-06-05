@@ -29,9 +29,9 @@
             <div class="footer-section links">
                 <h3>Legal</h3>
                 <ul>
-                    <li><a href="terminos.php">Términos y Condiciones</a></li>
-                    <li><a href="privacidad.php">Política de Privacidad</a></li>
-                    <li><a href="cookies.php">Política de Cookies</a></li>
+                    <li><a href="#">Términos y Condiciones</a></li>
+                    <li><a href="#">Política de Privacidad</a></li>
+                    <li><a href="#">Política de Cookies</a></li>
                 </ul>
             </div>
         </div>
