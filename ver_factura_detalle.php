@@ -147,7 +147,7 @@ $conn->close();
                                     <p>Avenida Larios 18001</p>
                                     <p>Granada, España</p>
                                     <p>Email: soporte@k8servers.es</p>
-                                    <p>Tel: +34 123 456 789</p>
+                                    <p>Tel: +34644825621</p>
                                 </div>
                             </div>
 

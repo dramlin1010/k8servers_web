@@ -23,7 +23,7 @@ include 'menu.php';
                         <p style="margin-bottom: 10px; font-size: 1.1rem;"><strong>Característica en desarrollo.</strong></p>
                         <p style="color: var(--text-color-muted);">Actualmente, la función de recuperación automática de contraseña está en proceso de implementación.</p>
                         <p style="color: var(--text-color-muted);">Si has olvidado tu contraseña y necesitas recuperarla, por favor, ponte en contacto con nuestro equipo de soporte técnico.</p>
-                        <p style="margin-top: 15px; color: var(--text-color-muted);">Puedes hacerlo a través de nuestro correo electrónico: <a href="mailto:soporte@k8servers.es">soporte@k8servers.es</a> o llamando al +34 123 456 789.</p>
+                        <p style="margin-top: 15px; color: var(--text-color-muted);">Puedes hacerlo a través de nuestro correo electrónico: <a href="mailto:soporte@k8servers.es">soporte@k8servers.es</a> o llamando al +34644825621.</p>
                         <p style="margin-top: 15px; color: var(--text-color-muted);">Lamentamos las molestias.</p>
                     </div>
 

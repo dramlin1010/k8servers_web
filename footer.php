@@ -22,7 +22,7 @@
                     <li><a href="index.php#features">Características</a></li>
                     <li><a href="index.php#pricing">Precios</a></li>
                     <li><a href="sobre_nosotros.php">Sobre Nosotros</a></li>
-                    <li><a href="contacto.php">Contacto</a></li>
+                    <li><a href="#footer">Contacto</a></li>
                 </ul>
             </div>
 
