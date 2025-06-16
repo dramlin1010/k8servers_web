@@ -128,10 +128,6 @@ $faqs_sobre_nosotros = [
                         </div>
                     <?php endforeach; ?>
                 </div>
-                 <div class="faq-contact-prompt" style="margin-top: 40px; text-align:center; background-color: var(--card-bg);">
-                    <p>¿Tienes más preguntas o necesitas ayuda específica?</p>
-                    <a href="contacto.php" class="btn btn-primary">Contáctanos</a>
-                </div>
             </div>
         </section>
     </main>
