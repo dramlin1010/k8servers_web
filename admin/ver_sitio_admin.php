@@ -136,7 +136,6 @@ if ($stmt_sitio) {
                                 </select>
                                 <button type="submit" class="btn btn-primary">Cambiar Estado</button>
                             </form>
-                            <a href="gestionar_archivos_sitio.php?id=<?php echo $sitio_detalle['SitioID']; ?>" class="btn btn-outline">Gestionar Archivos (FTP)</a>
                             <a href="ver_facturas_sitio.php?sitio_id=<?php echo $sitio_detalle['SitioID']; ?>" class="btn btn-outline">Ver Facturas del Sitio</a>
                             <form action="eliminar_sitio_admin.php" method="POST" style="display:inline-block;" onsubmit="return confirm('¿Estás SEGURO de que quieres eliminar este sitio web (<?php echo htmlspecialchars($sitio_detalle['DominioCompleto']); ?>)? Esta acción es irreversible y borrará todos sus datos.');">
                                 <input type="hidden" name="sitio_id_eliminar" value="<?php echo $sitio_detalle['SitioID']; ?>">
